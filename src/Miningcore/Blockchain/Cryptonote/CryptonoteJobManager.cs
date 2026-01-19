@@ -575,6 +575,7 @@ public class CryptonoteJobManager : JobManagerBase<CryptonoteJob>
 
     protected override async Task PostStartInitAsync(CancellationToken ct)
     {
+        logger.Info(() => "Starting Post Start Init");
         SetInstanceId();
 
         // coin config
@@ -592,9 +593,9 @@ public class CryptonoteJobManager : JobManagerBase<CryptonoteJob>
             if(clusterConfig.PaymentProcessing?.Enabled == true && addressResponse.Response?.Address != poolConfig.Address)
                 throw new PoolStartupException($"Wallet-Daemon does not own pool-address '{poolConfig.Address}'", poolConfig.Id);
         }
-
+        logger.Info(() => "Getting daemon data");
         var info = infoResponse.Response.ToObject<GetInfoResponse>();
-
+        logger.Info(() => "Checking network type");
         // chain detection
         if(!string.IsNullOrEmpty(info.NetType))
         {
@@ -617,6 +618,7 @@ public class CryptonoteJobManager : JobManagerBase<CryptonoteJob>
         else
             networkType = info.IsTestnet ? CryptonoteNetworkType.Test : CryptonoteNetworkType.Main;
 
+        logger.Info(() => "Validating Pool Address");
         // address validation
         poolAddressBase58Prefix = CryptonoteBindings.DecodeAddress(poolConfig.Address);
         if(poolAddressBase58Prefix == 0)
@@ -644,6 +646,8 @@ public class CryptonoteJobManager : JobManagerBase<CryptonoteJob>
         BlockchainStats.RewardType = "POW";
         BlockchainStats.NetworkType = networkType.ToString();
 
+        logger.Info(() => "Getting Network Stats");
+        
         await UpdateNetworkStatsAsync(ct);
 
         // Periodically update network stats
@@ -672,7 +676,7 @@ public class CryptonoteJobManager : JobManagerBase<CryptonoteJob>
                 logger.Info(() => "Waiting for first valid block template");
             } while(await timer.WaitForNextTickAsync(ct));
         }
-
+        logger.Info(() => "Completing Init");
         SetupJobUpdates(ct);
     }
 
