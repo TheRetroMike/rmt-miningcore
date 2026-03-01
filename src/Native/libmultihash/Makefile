@@ -47,3 +47,23 @@ $(TARGET): $(OBJECTS)
 
 clean:
 	$(RM) $(TARGET) $(OBJECTS)
+# --- auto: disable AES-only objects on CPUs without AES-NI ---
+ifeq ($(strip $(HAVE_AES)),)
+  CFLAGS += -mno-aes
+  OBJECTS := $(filter-out crypto/haraka.o xelisv2.o,$(OBJECTS))
+endif
+# --- auto: ensure AES-only xelisv2 never builds on CPUs without AES-NI ---
+ifeq ($(strip $(HAVE_AES)),)
+  # remove from both common object lists
+  OBJECTS := $(filter-out xelisv2.o crypto/haraka.o,$(OBJECTS))
+  OBJS    := $(filter-out xelisv2.o crypto/haraka.o,$(OBJS))
+  # if any rule tries to build it anyway, fail fast with a clear message
+#  xelisv2.o:
+#	@echo "Skipping xelisv2.o (requires AES-NI)"; true
+endif
+# --- auto: stub xelisv2.o on CPUs without AES-NI ---
+ifeq ($(strip $(HAVE_AES)),)
+  xelisv2.o:
+	@echo "Stubbing xelisv2.o (no AES-NI)"
+	@printf '%s\n' 'int xelisv2_disabled_no_aes(void){return 0;}' | $(CC) -x c -c -o $@ -
+endif

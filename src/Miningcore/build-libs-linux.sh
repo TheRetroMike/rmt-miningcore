@@ -1,6 +1,15 @@
 #!/bin/bash
 
-OutDir=$1
+OutDir="${1:-}"
+if [ -z "$OutDir" ]; then
+  echo "[build-libs] ERROR: OutDir is empty. Usage: $0 <outdir>" >&2
+  exit 2
+fi
+
+mkdir -p "$OutDir"
+OutDir="$(cd "$OutDir" && pwd -P)"
+export OutDir
+echo "[build-libs] OutDir=$OutDir"
 
 export UNAME_S=$(uname -s)
 export UNAME_P=$(uname -m || uname -p)
@@ -17,6 +26,8 @@ AVX512F=$(../Native/check_cpu.sh avx512f && echo -mavx512f || echo)
 export CPU_FLAGS="$AES $SSE2 $SSE3 $SSSE3 $PCLMUL $AVX $AVX2 $AVX512F"
 
 HAVE_AES=$(../Native/check_cpu.sh aes && echo -D__AES__ || echo)
+export HAVE_AES
+export CPU_FLAGS
 HAVE_SSE2=$(../Native/check_cpu.sh sse2 && echo -DHAVE_SSE2 || echo)
 HAVE_SSE3=$(../Native/check_cpu.sh sse3 && echo -DHAVE_SSE3 || echo)
 HAVE_SSSE3=$(../Native/check_cpu.sh ssse3 && echo -DHAVE_SSSE3 || echo)
@@ -48,6 +59,6 @@ export HAVE_FEATURE="$HAVE_AES $HAVE_SSE2 $HAVE_SSE3 $HAVE_SSSE3 $HAVE_PCLMUL $H
 (cd ../Native/libsccpow && make clean && make) && mv ../Native/libsccpow/libsccpow.so "$OutDir"
 
 ((cd /tmp && rm -rf secp256k1 && git clone https://github.com/bitcoin-ABC/secp256k1 && cd secp256k1 && git checkout 04fabb44590c10a19e35f044d11eb5058aac65b2 && mkdir build && cd build && cmake -GNinja .. -DCMAKE_C_FLAGS=-fPIC -DSECP256K1_ENABLE_MODULE_RECOVERY=OFF -DSECP256K1_ENABLE_COVERAGE=OFF -DSECP256K1_ENABLE_MODULE_SCHNORR=ON && ninja) && (cd ../Native/libnexapow && cp /tmp/secp256k1/build/libsecp256k1.a . && make clean && make) && mv ../Native/libnexapow/libnexapow.so "$OutDir")
-((cd /tmp && rm -rf RandomX && git clone https://github.com/tevador/RandomX && cd RandomX && git checkout tags/v1.2.1 && mkdir build && cd build && cmake -DARCH=native -DCMAKE_C_FLAGS=-Wa,--noexecstack -DCMAKE_CXX_FLAGS=-Wa,--noexecstack .. && make) && (cd ../Native/librandomx && cp /tmp/RandomX/build/librandomx.a . && make clean && make) && mv ../Native/librandomx/librandomx.so "$OutDir")
+((cd /tmp && rm -rf RandomX && git clone https://github.com/tevador/RandomX && cd RandomX && git checkout tags/v1.2.1 && mkdir build && cd build && cmake -DARCH=native -DCMAKE_C_FLAGS=-Wa,--noexecstack -DCMAKE_CXX_FLAGS=-Wa,--noexecstack .. && make randomx) && (cd ../Native/librandomx && cp /tmp/RandomX/build/librandomx.a . && make clean && make) && mv ../Native/librandomx/librandomx.so "$OutDir")
 ((cd /tmp && rm -rf RandomARQ && git clone https://github.com/arqma/RandomARQ && cd RandomARQ && git checkout 3bcb6bafe63d70f8e6f78a0d431e71be2b638083 && mkdir build && cd build && cmake -DARCH=native -DCMAKE_C_FLAGS=-Wa,--noexecstack -DCMAKE_CXX_FLAGS=-Wa,--noexecstack .. && make) && (cd ../Native/librandomarq && cp /tmp/RandomARQ/build/librandomx.a . && make clean && make) && mv ../Native/librandomarq/librandomarq.so "$OutDir")
-((cd /tmp && rm -rf Panthera && git clone https://github.com/scala-network/Panthera && cd Panthera && mkdir build && cd build && cmake -DARCH=native .. && make) && (cd ../Native/libpanthera && cp /tmp/Panthera/build/librandomx.a . && make clean && make) && mv ../Native/libpanthera/libpanthera.so "$OutDir")
+((cd /tmp && rm -rf Panthera && git clone https://github.com/scala-network/Panthera && cd Panthera && mkdir build && cd build && cmake -DARCH=native .. && make randomx) && (cd ../Native/libpanthera && cp /tmp/Panthera/build/librandomx.a . && make clean && make) && mv ../Native/libpanthera/libpanthera.so "$OutDir")
