@@ -143,7 +143,7 @@ public class BitcoinPool : PoolBase
 
             // extract control vars from password
             var staticDiff = GetStaticDiffFromPassparts(passParts);
-			var startDiff = GetStartDiffFromPassparts(passParts);
+            var startDiff = GetStartDiffFromPassparts(passParts);
 
             // Static diff
             if(staticDiff.HasValue && !startDiff.HasValue && (context.VarDiff != null && staticDiff.Value >= context.VarDiff.Config.MinDiff || context.VarDiff == null && staticDiff.Value > context.Difficulty))
@@ -156,7 +156,7 @@ public class BitcoinPool : PoolBase
                 await connection.NotifyAsync(BitcoinStratumMethods.SetDifficulty, new object[] { context.Difficulty });
             }
 
-			// Start diff
+            // Start diff
             if(startDiff.HasValue && (context.VarDiff != null && startDiff.Value >= context.VarDiff.Config.MinDiff || context.VarDiff == null && startDiff.Value > context.Difficulty))
             {
                 context.SetDifficulty(startDiff.Value);
@@ -164,9 +164,7 @@ public class BitcoinPool : PoolBase
 
                 await connection.NotifyAsync(BitcoinStratumMethods.SetDifficulty, new object[] { context.Difficulty });
             }
-
         }
-
         else
         {
             await connection.RespondErrorAsync(StratumError.UnauthorizedWorker, "Authorization failed", request.Id, context.IsAuthorized);
@@ -176,7 +174,17 @@ public class BitcoinPool : PoolBase
                 // issue short-time ban if unauthorized to prevent DDos on daemon (validateaddress RPC)
                 logger.Info(() => $"[{connection.ConnectionId}] Banning unauthorized worker {minerName} for {loginFailureBanTimeout.TotalSeconds} sec");
 
-                banManager.Ban(connection.RemoteEndpoint.Address, loginFailureBanTimeout);
+                var remoteAddress = connection.RemoteEndpoint?.Address;
+
+                if(remoteAddress != null && banManager != null)
+                {
+                    banManager.Ban(remoteAddress, loginFailureBanTimeout);
+                }
+                else
+                {
+                    logger.Warn(() =>
+                        $"[{connection.ConnectionId}] Unauthorized worker ban skipped (banManager={(banManager == null ? "null" : "ok")}, remoteAddress={(remoteAddress == null ? "null" : remoteAddress.ToString())})");
+                }
 
                 Disconnect(connection);
             }

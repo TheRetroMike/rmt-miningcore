@@ -132,9 +132,9 @@
     </ItemGroup>
 
     <!-- Build library binaries from source on Linux -->
-    <Target Name="BuildNativeLibsLinux" AfterTargets="AfterBuild" Condition="'$(IsLinux)' == 'true'">
-        <Exec Command="(cd $(ProjectDir) &amp;&amp; sh build-libs-linux.sh $(OutDir))" />
-    </Target>
+<Target Name="BuildNativeLibs" AfterTargets="Build" Condition="'$(BUILD_NATIVE_LIBS)' == 'true'">
+  <Exec Command="(cd 1000 4 24 27 30 46 101 988 1000MSBuildProjectDirectory) &amp;&amp; sh build-libs-linux.sh 1000 4 24 27 30 46 101 988 1000TargetDir))" />
+</Target>
 
     <!-- Include library binaries in publish on Windows -->
     <Target Name="NativeLibsPublishIncludeWin" BeforeTargets="PrepareForPublish" Condition="'$(IsWindows)' == 'true'">
